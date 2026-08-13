@@ -26,10 +26,12 @@ export default function Page() {
   const [modules, setModules] = useState<Module[]>([]);
   const [status, setStatus] = useState<Status | null>(null);
   const [hitl, setHITL] = useState<HITLItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
+        setError(null);
         const [mRes, sRes, hRes] = await Promise.all([
           fetch('http://127.0.0.1:8125/modules'),
           fetch('http://127.0.0.1:8125/status'),
@@ -38,8 +40,8 @@ export default function Page() {
         if (mRes.ok) setModules(await mRes.json());
         if (sRes.ok) setStatus(await sRes.json());
         if (hRes.ok) setHITL(await hRes.json());
-      } catch {
-        // offline
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -72,6 +74,27 @@ export default function Page() {
               <span className="font-mono text-gray-100">{key}</span>
             </div>
           ))}
+        </div>
+      </section>
+
+      {error && (
+        <section className="border border-red-400/40 rounded p-3 text-xs text-red-200">
+          Runtime connection issue: {error}
+        </section>
+      )}
+
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="border border-white/10 rounded p-3">
+          <div className="text-xs text-gray-400">Active modules</div>
+          <div className="text-2xl font-semibold">{status?.active_count ?? '--'}</div>
+        </div>
+        <div className="border border-white/10 rounded p-3">
+          <div className="text-xs text-gray-400">HITL queue</div>
+          <div className="text-2xl font-semibold">{hitl.length}</div>
+        </div>
+        <div className="border border-white/10 rounded p-3">
+          <div className="text-xs text-gray-400">Runtime</div>
+          <div className="text-2xl font-semibold">{status ? 'online' : 'offline'}</div>
         </div>
       </section>
 

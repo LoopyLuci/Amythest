@@ -13,23 +13,35 @@ type HITLItem = {
 export default function HITLPage() {
   const [items, setItems] = useState<HITLItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const res = await fetch('http://127.0.0.1:8125/hitl/queue');
-    if (res.ok) setItems(await res.json());
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch('http://127.0.0.1:8125/hitl/queue');
+      if (res.ok) setItems(await res.json());
+      else setError(`HTTP ${res.status}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
 
   async function approve(id: string) {
-    await fetch(`http://127.0.0.1:8125/hitl/${encodeURIComponent(id)}/approve`, { method: 'POST' });
+    setError(null);
+    const res = await fetch(`http://127.0.0.1:8125/hitl/${encodeURIComponent(id)}/approve`, { method: 'POST' });
+    if (!res.ok) setError(`Approve failed: ${res.status}`);
     load();
   }
 
   async function reject(id: string) {
-    await fetch(`http://127.0.0.1:8125/hitl/${encodeURIComponent(id)}/reject`, { method: 'POST' });
+    setError(null);
+    const res = await fetch(`http://127.0.0.1:8125/hitl/${encodeURIComponent(id)}/reject`, { method: 'POST' });
+    if (!res.ok) setError(`Reject failed: ${res.status}`);
     load();
   }
 
@@ -39,6 +51,9 @@ export default function HITLPage() {
         <div className="text-sm font-semibold">HITL Queue</div>
         <button onClick={load} className="text-xs border border-white/10 rounded px-2 py-1">{loading ? 'Loading...' : 'Refresh'}</button>
       </div>
+      {error && (
+        <div className="px-3 py-2 text-xs text-red-200 border-b border-white/10">{error}</div>
+      )}
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="text-gray-400">
