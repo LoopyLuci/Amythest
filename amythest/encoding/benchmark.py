@@ -1,44 +1,36 @@
-"""Benchmark validator that evaluates a module on test questions."""
+"""Simple benchmark for module activation latency."""
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass
+import time
+
+from amythest.core.manager import ModuleManager
+from amythest.storage.database import ModuleDatabase
 from pathlib import Path
-from typing import List
 
 
-@dataclass(frozen=True)
-class BenchmarkResult:
-    score: float
-    total: int
-    passed: int
-    details: List[dict]
-
-
-def run_benchmark(module_path: Path, test_file: Path, generate_fn) -> BenchmarkResult:
-    questions = []
-    if test_file.exists():
-        for line in test_file.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
+def benchmark_activation_latency(iterations: int = 20) -> dict:
+    db = ModuleDatabase(Path.home() / ".amythest" / "modules")
+    manager = ModuleManager(db)
+    modules = db.list_modules()
+    samples: list[float] = []
+    for _ in range(iterations):
+        start = time.perf_counter()
+        for m in modules:
             try:
-                questions.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    passed = 0
-    details = []
-    for q in questions:
-        prompt = q.get("input") or q.get("question", "")
-        expected = q.get("expected") or q.get("answer", "")
-        if not prompt:
-            continue
-        resp = generate_fn(prompt)
-        text = resp.text if hasattr(resp, "text") else str(resp)
-        ok = bool(expected) and (expected.lower() in text.lower())
-        if ok:
-            passed += 1
-        details.append({"prompt": prompt, "expected": expected, "actual": text, "passed": ok})
-    total = len(details)
-    score = passed / total if total else 0.0
-    return BenchmarkResult(score=score, total=total, passed=passed, details=details)
+                manager.activate(m.manifest.name, m.manifest.version, context="benchmark")
+            except Exception:
+                pass
+        elapsed = time.perf_counter() - start
+        samples.append(elapsed)
+    return {
+        "iterations": iterations,
+        "samples": samples,
+        "min": min(samples),
+        "max": max(samples),
+        "mean": sum(samples) / len(samples),
+    }
+
+
+if __name__ == "__main__":
+    print(benchmark_activation_latency())

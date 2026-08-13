@@ -90,6 +90,18 @@ def recommend_modules(body: RecommendBody) -> list[dict]:
     return [{"name": r.name, "version": r.version, "score": r.score, "reason": r.reason} for r in results]
 
 
+@app.get("/metrics")
+def metrics() -> list[dict]:
+    modules = _manager.db.list_modules()
+    active = _manager.active_modules()
+    hitl_len = len(_hitl.queue)
+    return [
+        {"name": "modules_total", "value": float(len(modules)), "unit": "count"},
+        {"name": "modules_active", "value": float(len(active)), "unit": "count"},
+        {"name": "hitl_queue_depth", "value": float(hitl_len), "unit": "count"},
+    ]
+
+
 @app.post("/usage")
 def record_usage(body: UsageRecordBody) -> dict:
     record = UsageRecord(

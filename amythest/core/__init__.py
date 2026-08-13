@@ -4,9 +4,8 @@ from amythest.core.hitl import ActionType, Decision, HITLEngine, Policy
 from amythest.core.manager import ModuleManager, ConflictReport
 from amythest.core.module_index import ModuleIndex
 from amythest.core.usage import UsageRecord, UsageTracker
-from amythest.encoding.benchmark import BenchmarkResult
-from amythest.encoding.trainer import build_training_records, package_module_outputs, save_jsonl
-from amythest.encoding.train import train_lora_adapter, TrainingConfig
+from amythest.encoding.benchmark import benchmark_activation_latency
+from amythest.encoding.trainer import build_training_records, save_jsonl
 from amythest.encoding.validator import validate_package
 from amythest.package import read_apkg, write_apkg
 from amythest.storage.database import ModuleDatabase, StoredModule
@@ -27,11 +26,8 @@ __all__ = [
     "ModuleIndex",
     "UsageRecord",
     "UsageTracker",
-    "BenchmarkResult",
-    "TrainingConfig",
-    "train_lora_adapter",
+    "benchmark_activation_latency",
     "build_training_records",
-    "package_module_outputs",
     "save_jsonl",
     "validate_package",
     "read_apkg",
