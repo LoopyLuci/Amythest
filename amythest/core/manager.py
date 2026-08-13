@@ -10,6 +10,7 @@ from typing import Dict, Iterable, List, Optional
 from amythest.storage.database import ModuleDatabase, StoredModule
 from amythest.types import ModuleManifest, ModuleType
 from amythest.package import ApkgError, read_apkg, write_apkg
+from amythest.core.analyzer import TaskAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,9 @@ class ConflictReport:
 
 
 class ModuleManager:
-    def __init__(self, db: ModuleDatabase) -> None:
+    def __init__(self, db: ModuleDatabase, index_path: Optional[Path] = None) -> None:
         self.db = db
+        self.analyzer = TaskAnalyzer(index_path=index_path)
 
     def install_package(self, source: Path) -> StoredModule:
         logger.info("Installing module package: %s", source)
@@ -120,6 +122,11 @@ class ModuleManager:
                 for m in active
             ],
         }
+
+    def recommend_modules(self, description: str, top_k: int = 5) -> List[ModuleRecommendation]:
+        modules = self.db.list_modules()
+        task = Task(description=description)
+        return self.analyzer.recommend(task, modules, top_k=top_k)
 
     def _detect_conflicts(self, candidate: ModuleManifest, active: Iterable[ModuleManifest]) -> List[ConflictReport]:
         reports: List[ConflictReport] = []

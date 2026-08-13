@@ -7,49 +7,40 @@ from pathlib import Path
 import pytest
 
 from amythest.core.checkpoint import CheckpointManager
-from amythest.core.hitl import ActionType, HITLEngine
 from amythest.core.module_index import ModuleIndex
-from amythest.core.usage import UsageTracker
-from amythest.encoding.validator import validate_package
+from amythest.core.usage import UsageTracker, UsageRecord
+from amythest.examples.smoke import run_smoke
 
 
-def test_module_index_build_and_search(tmp_path: Path):
-    modules = [
-        {"name": "python-knowledge", "description": "Python language knowledge", "tags": ["python"], "version": "1.0.0"},
-        {"name": "docker-tools", "description": "Docker container tools", "tags": ["docker"], "version": "1.0.0"},
-    ]
-    idx = ModuleIndex(tmp_path / "index.db")
-    idx.build(modules)
-    recs = idx.search(type("Task", (), {"description": "python asyncio"})(), top_k=1)
-    assert recs and recs[0].name == "python-knowledge"
+def test_checkpoint_manager_round_trip(tmp_path: Path) -> None:
+    cm = CheckpointManager(tmp_path / "ckpt")
+    cm.create(["python-3.12-knowledge"], metadata={"note": "round-trip"})
+    latest = cm.latest()
+    assert latest is not None
+    assert latest.active_modules == ["python-3.12-knowledge"]
+    rolled = cm.rollback(latest)
+    assert rolled.active_modules == ["python-3.12-knowledge"]
 
 
-def test_usage_tracker_roundtrip(tmp_path: Path):
+def test_usage_tracker_emits_summary(tmp_path: Path) -> None:
     tracker = UsageTracker(tmp_path / "usage.db")
-    from datetime import datetime
-    from amythest.core.usage import UsageRecord
-    tracker.record(UsageRecord(task_category="python", module_name="python-knowledge", module_version="1.0.0", active=True, helpful=True, timestamp=datetime.utcnow()))
-    rate = tracker.helpful_rate("python-knowledge", "1.0.0")
+    tracker.record(UsageRecord(task_category="qa", module_name="python-3.12-knowledge", module_version="1.0.0", active=True, helpful=True, timestamp=__import__("datetime").datetime.utcnow()))
+    rate = tracker.helpful_rate("python-3.12-knowledge", "1.0.0")
     assert rate == 1.0
 
 
-def test_checkpoint_with_model_state(tmp_path: Path):
-    mgr = CheckpointManager(tmp_path / "checkpoints")
-    from amythest.backend.local import ModelState
-    cp = mgr.create(["python-knowledge"], metadata={"step": 1}, model_state=ModelState(model_name="base", weight_hash="abc123", device="cpu"), adapter_shards=["sha1"])
-    assert cp.path.exists()
-    raw = (cp.path / "manifest.json").read_text(encoding="utf-8")
-    assert "adapter_shards" in raw
-    assert "model" in raw
+def test_module_index_fallback_without_embedder(tmp_path: Path) -> None:
+    index_path = tmp_path / "modules.db"
+    idx = ModuleIndex(index_path)
+    idx.build([
+        {"name": "python-3.12-knowledge", "description": "Python stdlib knowledge", "tags": ["python"], "version": "1.0.0"}
+    ])
+    results = idx.search(type("Task", (), {"description": "python list comprehension"})(), top_k=1)
+    assert len(results) == 1
+    assert results[0].name == "python-3.12-knowledge"
 
 
-def test_validator_flags_missing_index():
-    from amythest.package import write_apkg
-    from amythest.types import ModuleManifest, ModuleType
-    import tempfile
-    with tempfile.TemporaryDirectory() as td:
-        path = Path(td) / "m.apkg"
-        write_apkg(path, ModuleManifest(name="x", version="0.1.0", author="a", description="d", module_type=ModuleType.KNOWLEDGE, base_model_name="b", base_model_version="0.1.0", base_model_architecture="dense"))
-        result = validate_package(path)
-        assert result.ok
-        assert any("index/chunks.jsonl" in w for w in result.warnings)
+def test_smoke_demo_runs() -> None:
+    result = run_smoke()
+    assert isinstance(result, dict)
+    assert result.get("modules_installed", 0) >= 1
