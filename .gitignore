@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.env/
+dist/
+build/
+
+# Amythest runtime data
+.amythest/
+
+# Modules directory if used as generated artifacts
+modules/
+
+# Web build outputs
+web/out/
+web/.next/
+web/node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
