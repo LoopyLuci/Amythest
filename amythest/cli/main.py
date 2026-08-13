@@ -72,6 +72,8 @@ def create(
         base_model_architecture=base_model_architecture,
     )
     files: dict[str, bytes] = {}
+    tags = list(manifest.tags or [])
+    size_mb = manifest.size_mb or 0.0
     if module_type == ModuleType.KNOWLEDGE.value:
         if source.is_dir():
             chunks = ingest_directory(source)
@@ -80,8 +82,24 @@ def create(
         payload = build_knowledge_payload(chunks)
         files["chunks.jsonl"] = "\n".join(chunks).encode("utf-8")
         files["index/chunks.jsonl"] = files["chunks.jsonl"]
-        manifest.tags = list({chunk.split()[0] for chunk in chunks[:10] if chunk.strip()})[:5]
-        manifest.size_mb = round(len(files["chunks.jsonl"]) / (1024 * 1024), 2)
+        tags = list({chunk.split()[0] for chunk in chunks[:10] if chunk.strip()})[:5]
+        size_mb = round(len(files["chunks.jsonl"]) / (1024 * 1024), 2)
+    manifest = ModuleManifest(
+        name=name,
+        version=version,
+        author=author,
+        description=description,
+        module_type=ModuleType(module_type),
+        base_model_name=base_model,
+        base_model_version=base_model_version,
+        base_model_architecture=base_model_architecture,
+        dependencies=manifest.dependencies,
+        injection_ports=manifest.injection_ports,
+        size_mb=size_mb,
+        tags=tags,
+        benchmark_score=manifest.benchmark_score,
+        sha256=manifest.sha256,
+    )
     if output_path is None:
         output_path = Path.cwd() / f"{name}-{version}.apkg"
     dest = write_apkg(output_path, manifest, files)
