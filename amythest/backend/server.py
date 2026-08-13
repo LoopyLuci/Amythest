@@ -9,7 +9,8 @@ from pathlib import Path
 app = FastAPI(title="Amythest Runtime")
 
 _db = ModuleDatabase(Path.home() / ".amythest" / "modules")
-_manager = ModuleManager(_db)
+_index_path = Path.home() / ".amythest" / "modules" / "module_index.db"
+_manager = ModuleManager(_db, index_path=_index_path)
 _hitl = HITLEngine()
 
 
@@ -29,6 +30,18 @@ class ModuleOut(BaseModel):
 class StatusOut(BaseModel):
     active_count: int
     active_modules: list[dict]
+
+
+class RecommendBody(BaseModel):
+    description: str
+    top_k: int = 5
+
+
+class RecommendationOut(BaseModel):
+    name: str
+    version: str
+    score: float
+    reason: str
 
 
 @app.get("/status")
@@ -59,6 +72,12 @@ def activate_module(name: str, version: str) -> dict:
 def deactivate_module(name: str, version: str) -> dict:
     _manager.deactivate(name, version)
     return {"deactivated": name, "version": version}
+
+
+@app.post("/recommend", response_model=list[RecommendationOut])
+def recommend_modules(body: RecommendBody) -> list[dict]:
+    results = _manager.recommend_modules(body.description, top_k=body.top_k)
+    return [{"name": r.name, "version": r.version, "score": r.score, "reason": r.reason} for r in results]
 
 
 @app.post("/hitl/evaluate")

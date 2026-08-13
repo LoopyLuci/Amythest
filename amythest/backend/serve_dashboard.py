@@ -37,7 +37,8 @@ def serve_dashboard(host: str = "127.0.0.1", port: int = 8125, static_path: Path
 
     app.mount("/", StaticFiles(directory=str(static_path), html=True), name="web")
     db = ModuleDatabase(Path.home() / ".amythest" / "modules")
-    ModuleManager(db)
+    index_path = Path.home() / ".amythest" / "modules" / "module_index.db"
+    ModuleManager(db, index_path=index_path)
     HITLEngine()
 
     config = Config(app=app, host=host, port=port, log_level="info")
