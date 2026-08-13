@@ -121,6 +121,10 @@ class AmythestApp(App):
         self.refresh_modules()
         self.refresh_hitl()
         self.query_one(RichLog).write("[green]Amythest runtime initialized.[/green]")
+        self.swarm_agents = [{"id": "a1", "status": "idle"}, {"id": "a2", "status": "busy"}, {"id": "a3", "status": "idle"}]
+        self.swarm_tasks = [{"id": "t1", "status": "queued"}, {"id": "t2", "status": "running"}, {"id": "t3", "status": "done"}]
+        graph = self.query_one("#swarm_graph", SwarmGraph)
+        graph.update_data(self.swarm_agents, self.swarm_tasks)
 
     def refresh_modules(self) -> None:
         table = self.query_one("#modules_table", DataTable)

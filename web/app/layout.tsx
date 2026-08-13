@@ -34,8 +34,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-[#0b0f1a] text-gray-200">
         <header className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
           <div className="font-semibold tracking-wide">Amythest Dashboard</div>
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-gray-400 flex gap-2 items-center">
             {status ? `Active modules: ${status.active_count}` : 'Runtime offline'}
+            <a href="/" className="px-2 py-1 border border-white/10 rounded text-xs">Dashboard</a>
+            <a href="/modules" className="px-2 py-1 border border-white/10 rounded text-xs">Modules</a>
+            <a href="/hitl" className="px-2 py-1 border border-white/10 rounded text-xs">HITL</a>
+            <a href="/usage" className="px-2 py-1 border border-white/10 rounded text-xs">Usage</a>
           </div>
         </header>
         <main className="p-4 grid gap-4">

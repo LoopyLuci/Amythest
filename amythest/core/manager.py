@@ -10,7 +10,7 @@ from typing import Dict, Iterable, List, Optional
 from amythest.storage.database import ModuleDatabase, StoredModule
 from amythest.types import ModuleManifest, ModuleType
 from amythest.package import ApkgError, read_apkg, write_apkg
-from amythest.core.analyzer import TaskAnalyzer
+from amythest.core.analyzer import Task, TaskAnalyzer
 
 logger = logging.getLogger(__name__)
 

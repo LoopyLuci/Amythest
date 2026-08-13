@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 from amythest.core.manager import ModuleManager
 from amythest.core.hitl import ActionType, HITLEngine
+from amythest.core.usage import UsageTracker, UsageRecord
 from amythest.storage.database import ModuleDatabase
 from pathlib import Path
 
@@ -12,6 +13,7 @@ _db = ModuleDatabase(Path.home() / ".amythest" / "modules")
 _index_path = Path.home() / ".amythest" / "modules" / "module_index.db"
 _manager = ModuleManager(_db, index_path=_index_path)
 _hitl = HITLEngine()
+_usage = UsageTracker(Path.home() / ".amythest" / "usage.db")
 
 
 class EvaluateBody(BaseModel):
@@ -42,6 +44,14 @@ class RecommendationOut(BaseModel):
     version: str
     score: float
     reason: str
+
+
+class UsageRecordBody(BaseModel):
+    task_category: str
+    module_name: str
+    module_version: str
+    active: bool
+    helpful: bool | None = None
 
 
 @app.get("/status")
@@ -78,6 +88,27 @@ def deactivate_module(name: str, version: str) -> dict:
 def recommend_modules(body: RecommendBody) -> list[dict]:
     results = _manager.recommend_modules(body.description, top_k=body.top_k)
     return [{"name": r.name, "version": r.version, "score": r.score, "reason": r.reason} for r in results]
+
+
+@app.post("/usage")
+def record_usage(body: UsageRecordBody) -> dict:
+    record = UsageRecord(
+        task_category=body.task_category,
+        module_name=body.module_name,
+        module_version=body.module_version,
+        active=body.active,
+        helpful=body.helpful,
+        timestamp=__import__("datetime").datetime.utcnow(),
+    )
+    _usage.record(record)
+    return {"recorded": True}
+
+
+@app.get("/usage/rate")
+@app.post("/usage/rate")
+def usage_rate(module_name: str = Query(...), module_version: str = Query(...)) -> dict:
+    rate = _usage.helpful_rate(module_name, module_version)
+    return {"module_name": module_name, "module_version": module_version, "helpful_rate": rate}
 
 
 @app.post("/hitl/evaluate")
