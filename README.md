@@ -13,8 +13,8 @@ pip install -e .
 
 ```bash
 python -m pytest tests/ -q
-amythest list
-amythest status
+python -m amythest list
+python -m amythest status
 ```
 
 ## Generate example modules
@@ -36,6 +36,26 @@ python amythest/examples/smoke.py
 Verify server:
 ```bash
 python amythest/examples/verify_server.py
+```
+
+## CLI
+
+Run the CLI with:
+```bash
+python -m amythest --help
+```
+
+Create a module package from a text file or directory:
+```bash
+python -m amythest create ./notes.txt --name notes --version 1.0.0 --author test --description "Notes module" --type knowledge
+```
+
+Install and manage modules:
+```bash
+python -m amythest install ./notes-1.0.0.apkg
+python -m amythest activate notes 1.0.0
+python -m amythest list
+python -m amythest status
 ```
 
 ## TUI
@@ -65,6 +85,7 @@ Endpoints:
 - `GET /modules`
 - `POST /modules/{name}/{version}/activate`
 - `POST /modules/{name}/{version}/deactivate`
+- `POST /recommend`
 - `POST /hitl/evaluate`
 - `GET /hitl/queue`
 - `POST /hitl/{request_id}/approve`
@@ -88,7 +109,7 @@ uvicorn amythest.backend.server:app --host 127.0.0.1 --port 8125
 ```
 
 Pages:
-- `/` live status, shortcuts, module composition
+- `/` live status, shortcuts, module composition, recommendations
 - `/modules` module table with activate/deactivate
 - `/hitl` approval queue with approve/reject
 
