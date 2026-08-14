@@ -1,0 +1,11 @@
+- action: tool_call
+  auto_approve: false
+- action: model_edit
+  auto_approve: false
+  require_reason: true
+- action: module_install
+  auto_approve: false
+- action: module_activate
+  auto_approve: false
+- action: external_request
+  auto_approve: true

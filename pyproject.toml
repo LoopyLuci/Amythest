@@ -47,6 +47,9 @@ dev = [
   "ruff>=0.1.0",
   "mypy>=1.7.0",
 ]
+dvc = [
+  "dvc>=3.0.0",
+]
 
 [project.scripts]
 amythest = "amythest.cli.main:main"

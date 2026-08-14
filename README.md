@@ -94,6 +94,8 @@ Endpoints:
 - `GET /hitl/queue`
 - `POST /hitl/{request_id}/approve`
 - `POST /hitl/{request_id}/reject`
+- `POST /checkpoint`
+- `POST /rollback`
 
 ## Web dashboard
 
@@ -127,6 +129,20 @@ docker build -t amythest .
 docker run -p 8125:8125 amythest
 ```
 
+## Reproducibility and artifact versioning
+
+Optional DVC setup:
+```bash
+pip install dvc
+dvc init
+dvc remote add -d local /path/to/remote
+```
+
+Optional DVC-based model/artifact tracking:
+```bash
+dvc add .amythest/cache
+```
+
 ## Module package format
 
 A `.apkg` is a zip archive:
@@ -146,3 +162,4 @@ module.apkg
 
 - `docs/Amythest-Architecture.md`
 - `docs/APKG_FORMAT.md`
+- `docs/ROADMAP.md`

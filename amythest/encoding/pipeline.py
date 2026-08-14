@@ -34,3 +34,12 @@ def ingest_directory(root: Path, size: int = 512, overlap: int = 64) -> List[str
 def build_knowledge_payload(chunks: Iterable[str]) -> dict:
     items = list(chunks)
     return {"chunk_count": len(items), "preview": "\n\n".join(items[:5])}
+
+
+def encode_training_records(records: Iterable[dict]) -> List[str]:
+    items = []
+    for record in records:
+        text = record.get("text")
+        if isinstance(text, str) and text.strip():
+            items.append(text.strip())
+    return items
