@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Dict, List, Optional
 
 
 class ModuleType(str, Enum):
@@ -32,12 +30,12 @@ class ModuleManifest:
     base_model_version: str
     base_model_architecture: str
 
-    dependencies: List[Dict[str, str]] = field(default_factory=list)
-    injection_ports: List[int] = field(default_factory=lambda: [0, 4, 8, 12])
+    dependencies: list[dict[str, str]] = field(default_factory=list)
+    injection_ports: list[int] = field(default_factory=lambda: [0, 4, 8, 12])
     size_mb: float = 0.0
-    tags: List[str] = field(default_factory=list)
-    benchmark_score: Optional[float] = None
-    sha256: Optional[str] = None
+    tags: list[str] = field(default_factory=list)
+    benchmark_score: float | None = None
+    sha256: str | None = None
 
     def to_json(self) -> str:
         return json.dumps(
@@ -63,7 +61,7 @@ class ModuleManifest:
         )
 
     @classmethod
-    def from_json(cls, data: str) -> "ModuleManifest":
+    def from_json(cls, data: str) -> ModuleManifest:
         payload = json.loads(data)
         return cls(
             name=payload["name"],

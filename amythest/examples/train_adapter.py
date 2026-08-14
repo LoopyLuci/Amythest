@@ -4,12 +4,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from amythest.encoding.trainer import build_training_records, save_jsonl
-from amythest.encoding.pipeline import encode_training_records
-from amythest.types import ModuleManifest, ModuleType
-from amythest.package import write_apkg
 from amythest.core.manager import ModuleManager
+from amythest.encoding.pipeline import encode_training_records
+from amythest.encoding.trainer import build_training_records, save_jsonl
+from amythest.package import write_apkg
 from amythest.storage.database import ModuleDatabase
+from amythest.types import ModuleManifest, ModuleType
 
 
 def main() -> None:

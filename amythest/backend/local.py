@@ -1,23 +1,18 @@
-"""Local model backend with module injection support."""
-
 from __future__ import annotations
 
 import hashlib
-import os
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from amythest.backend.interface import GenerationRequest, GenerationResponse, ModelBackend
 
 try:
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-    from peft import PeftModel
     import torch
+    from peft import PeftModel
+    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     HAS_TRANSFORMERS = True
-except Exception:
+except ModuleNotFoundError:
     HAS_TRANSFORMERS = False
 
 
@@ -29,22 +24,22 @@ class ModelState:
 
 
 class LocalBackend(ModelBackend):
-    def __init__(self, cache_dir: Optional[Path] = None) -> None:
+    def __init__(self, cache_dir: Path | None = None) -> None:
         self.cache_dir = cache_dir or Path.home() / ".amythest" / "cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.model: Optional[object] = None
-        self.tokenizer: Optional[object] = None
+        self.model: object | None = None
+        self.tokenizer: object | None = None
         self.model_name = ""
         self.device = "cpu"
-        self.active_adapters: Dict[str, Path] = {}
-        self.state: Optional[ModelState] = None
+        self.active_adapters: dict[str, Path] = {}
+        self.state: ModelState | None = None
 
-    def load_base_model(self, model_name: str, model_path: Optional[Path] = None, device_map: str = "auto", load_in_4bit: bool = False) -> None:
+    def load_base_model(self, model_name: str, model_path: Path | None = None, device_map: str = "auto", load_in_4bit: bool = False) -> None:
         if not HAS_TRANSFORMERS:
             raise RuntimeError("transformers/torch not installed; cannot load local model.")
         source = model_path or model_name
         self.tokenizer = AutoTokenizer.from_pretrained(source, cache_dir=self.cache_dir)
-        model_kwargs: Dict[str, object] = {
+        model_kwargs: dict[str, object] = {
             "cache_dir": self.cache_dir,
             "device_map": device_map if device_map in {"auto", "cpu", "cuda", "mps"} else "auto",
             "torch_dtype": torch.float32,
@@ -53,7 +48,7 @@ class LocalBackend(ModelBackend):
             try:
                 from transformers import BitsAndBytesConfig  # type: ignore
                 model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
-            except Exception:
+            except ModuleNotFoundError:
                 load_in_4bit = False
         self.model = AutoModelForCausalLM.from_pretrained(source, **model_kwargs)
         self.model_name = model_name
@@ -65,12 +60,12 @@ class LocalBackend(ModelBackend):
             device=self.device,
         )
 
-    def ensure_model(self, model_name: Optional[str] = None, device_map: str = "auto", load_in_4bit: bool = False) -> None:
+    def ensure_model(self, model_name: str | None = None, device_map: str = "auto", load_in_4bit: bool = False) -> None:
         if self.model is None or self.tokenizer is None:
             target = model_name or "distilgpt2"
             self.load_base_model(target, device_map=device_map, load_in_4bit=load_in_4bit)
 
-    def inject_modules(self, modules: List[Dict[str, object]]) -> None:
+    def inject_modules(self, modules: list[dict[str, object]]) -> None:
         if not HAS_TRANSFORMERS or self.model is None:
             raise RuntimeError("Model not loaded.")
         for m in modules:
@@ -87,7 +82,7 @@ class LocalBackend(ModelBackend):
             if path.suffix.lower() == ".apkg":
                 from amythest.encoding.trainer import extract_adapter_dir
                 resolved = extract_adapter_dir(path)
-            self.model = PeftModel.from_pretrained(self.model, resolved)
+            self.model = PeftModel.from_pretrained(self.model, str(resolved))
             self.active_adapters[name] = resolved
 
     def generate(self, request: GenerationRequest) -> GenerationResponse:
@@ -124,7 +119,7 @@ def _cuda_available() -> bool:
         return False
     try:
         return torch.cuda.is_available()
-    except Exception:
+    except RuntimeError:
         return False
 
 

@@ -6,10 +6,12 @@ from pathlib import Path
 
 from amythest.core.analyzer import Task, TaskAnalyzer
 from amythest.core.checkpoint import CheckpointManager
-from amythest.core.hitl import ActionType, HITLEngine
 from amythest.core.manager import ModuleManager
 from amythest.encoding.validator import validate_package
-from amythest.examples.real_builder import build_real_knowledge_module, build_real_skill_module, install_real_examples
+from amythest.examples.real_builder import (
+    build_real_knowledge_module,
+    build_real_skill_module,
+)
 from amythest.storage.database import ModuleDatabase
 
 

@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import ClassVar
 
-from rich.console import RenderableType
-from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
@@ -23,8 +21,8 @@ from textual.widgets import (
     Timer,
 )
 
+from amythest.core.hitl import HITLEngine
 from amythest.core.manager import ModuleManager
-from amythest.core.hitl import HITLEngine, ActionType
 from amythest.storage.database import ModuleDatabase
 from amythest.tui.swarm_graph import SwarmGraph
 
@@ -47,6 +45,7 @@ class RightPanel(Vertical):
         yield Static("GPU: --", id="gpu_metric")
         yield Static("Active modules: 0", id="module_metric")
         yield Static("Uptime: 0s", id="uptime_metric")
+        yield Static("Selected module: --", id="selected_module_metric")
 
 
 class BottomPanel(Vertical):
@@ -75,7 +74,7 @@ class AmythestApp(App):
     DataTable, RichLog { height: 1fr; }
     .panel_title { text-style: bold; color: $accent; dock: top; }
     """
-    BINDINGS = [
+    BINDINGS: ClassVar[list[Binding]] = [
         Binding("q", "quit", "Quit"),
         Binding("ctrl+c", "quit", "Quit", show=False),
         Binding("l", "refresh_modules", "Refresh modules"),
@@ -87,14 +86,17 @@ class AmythestApp(App):
         Binding("/", "focus_input", "Command input"),
         Binding("1", "show_modules", "Modules"),
         Binding("2", "show_hitl", "HITL"),
+        Binding("h", "approve_hitl", "Approve HITL"),
+        Binding("j", "reject_hitl", "Reject HITL"),
+        Binding("m", "modify_hitl", "Modify HITL"),
     ]
 
     command_text: reactive[str] = reactive("")
-    started_at: datetime = datetime.utcnow()
-    swarm_agents: List[dict] = []
-    swarm_tasks: List[dict] = []
+    started_at: datetime = datetime.now(UTC)
+    swarm_agents: ClassVar[list[dict]] = []
+    swarm_tasks: ClassVar[list[dict]] = []
 
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         super().__init__()
         if db_path is None:
             db_path = Path.home() / ".amythest" / "modules"
@@ -141,6 +143,16 @@ class AmythestApp(App):
         self.query_one("#module_metric", Static).update(
             f"Active modules: {len(self.manager.active_modules())}"
         )
+        self._update_selected_module()
+
+    def _update_selected_module(self) -> None:
+        table = self.query_one("#modules_table", DataTable)
+        if table.cursor_coordinate.row is None:
+            self.query_one("#selected_module_metric", Static).update("Selected module: --")
+            return
+        row_key = table.coordinate_to_cell_key(table.cursor_coordinate).row_key
+        row = table.get_row(row_key)
+        self.query_one("#selected_module_metric", Static).update(f"Selected module: {row[0]} {row[1]}")
 
     def refresh_hitl(self) -> None:
         table = self.query_one("#hitl_table", DataTable)
@@ -167,7 +179,7 @@ class AmythestApp(App):
             return
         try:
             self.manager.activate(name, version, context="tui")
-        except Exception as exc:
+        except RuntimeError as exc:
             self.query_one(RichLog).write(f"[red]Activation failed: {exc}[/red]")
             return
         self.refresh_modules()
@@ -185,7 +197,7 @@ class AmythestApp(App):
             return
         try:
             self.manager.deactivate(name, version)
-        except Exception as exc:
+        except RuntimeError as exc:
             self.query_one(RichLog).write(f"[red]Deactivation failed: {exc}[/red]")
             return
         self.refresh_modules()
@@ -206,6 +218,40 @@ class AmythestApp(App):
     def on_timer(self, event: Timer) -> None:
         self.refresh_modules()
         self.refresh_hitl()
+
+    def _selected_hitl_id(self) -> str | None:
+        table = self.query_one("#hitl_table", DataTable)
+        if table.cursor_coordinate.row is None:
+            return None
+        row_key = table.coordinate_to_cell_key(table.cursor_coordinate).row_key
+        return str(table.get_row(row_key)[0])
+
+    def _apply_hitl_action(self, action: str) -> None:
+        hitl_id = self._selected_hitl_id()
+        log = self.query_one(RichLog)
+        if not hitl_id:
+            log.write("[yellow]No HITL item selected.[/yellow]")
+            return
+        try:
+            self.hitl.decide(hitl_id, action, "tui")
+            log.write(f"[green]HITL {hitl_id}: {action} recorded.[/green]")
+            self.refresh_hitl()
+        except Exception as exc:
+            log.write(f"[red]HITL action failed: {exc}[/red]")
+
+    def action_approve_hitl(self) -> None:
+        self._apply_hitl_action("approve")
+
+    def action_reject_hitl(self) -> None:
+        self._apply_hitl_action("reject")
+
+    def action_modify_hitl(self) -> None:
+        hitl_id = self._selected_hitl_id()
+        if not hitl_id:
+            self.query_one(RichLog).write("[yellow]No HITL item selected.[/yellow]")
+            return
+        self.query_one(Input).value = f"/hitl modify {hitl_id} "
+        self.action_focus_input()
 
     def action_show_modules(self) -> None:
         self.query_one(LeftPanel).remove_class("hidden")
@@ -243,18 +289,28 @@ class AmythestApp(App):
                 self.manager.activate(args[0], args[1], context="tui")
                 self.refresh_modules()
                 log.write(f"[green]Activated {args[0]} {args[1]}[/green]")
-            except Exception as exc:
+            except RuntimeError as exc:
                 log.write(f"[red]{exc}[/red]")
         elif cmd == "deactivate" and len(args) == 2:
             try:
                 self.manager.deactivate(args[0], args[1])
                 self.refresh_modules()
                 log.write(f"[yellow]Deactivated {args[0]} {args[1]}[/yellow]")
+            except RuntimeError as exc:
+                log.write(f"[red]{exc}[/red]")
+        elif cmd == "hitl" and len(args) >= 2:
+            hitl_id = args[0]
+            sub = args[1].lower()
+            reason = " ".join(args[2:]) or "tui"
+            try:
+                self.hitl.decide(hitl_id, sub, reason)
+                log.write(f"[green]HITL {hitl_id}: {sub} recorded.[/green]")
+                self.refresh_hitl()
             except Exception as exc:
                 log.write(f"[red]{exc}[/red]")
         else:
             log.write(f"[red]Unknown command: {cmd}[/red]")
 
 
-def run(db_path: Optional[Path] = None) -> None:
+def run(db_path: Path | None = None) -> None:
     AmythestApp(db_path=db_path).run()

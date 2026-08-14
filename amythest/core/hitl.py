@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import List, Optional
 
 
 class ActionType(str, Enum):
@@ -47,17 +46,17 @@ class ApprovalRequest:
     payload: dict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     decided: bool = False
-    decision: Optional[Decision] = None
-    modifier: Optional[str] = None
+    decision: Decision | None = None
+    modifier: str | None = None
 
 
 class HITLEngine:
-    def __init__(self, policies: Optional[List[Policy]] = None) -> None:
+    def __init__(self, policies: list[Policy] | None = None) -> None:
         self.policies = {p.action: p for p in (policies or _DEFAULT_POLICIES)}
-        self.queue: List[ApprovalRequest] = []
-        self.history: List[ApprovalRequest] = []
+        self.queue: list[ApprovalRequest] = []
+        self.history: list[ApprovalRequest] = []
 
-    def evaluate(self, action: ActionType, description: str, payload: Optional[dict] = None) -> ApprovalRequest:
+    def evaluate(self, action: ActionType, description: str, payload: dict | None = None) -> ApprovalRequest:
         policy = self.policies.get(action)
         req = ApprovalRequest(
             id=_request_id(action, description),
@@ -73,13 +72,13 @@ class HITLEngine:
         self.queue.append(req)
         return req
 
-    def approve(self, request_id: str) -> Optional[ApprovalRequest]:
+    def approve(self, request_id: str) -> ApprovalRequest | None:
         return _decide(self.queue, self.history, request_id, Decision.APPROVED)
 
-    def reject(self, request_id: str) -> Optional[ApprovalRequest]:
+    def reject(self, request_id: str) -> ApprovalRequest | None:
         return _decide(self.queue, self.history, request_id, Decision.REJECTED)
 
-    def modify(self, request_id: str, modifier: str) -> Optional[ApprovalRequest]:
+    def modify(self, request_id: str, modifier: str) -> ApprovalRequest | None:
         req = _find(self.queue, request_id)
         if not req:
             return None
@@ -92,18 +91,18 @@ class HITLEngine:
 
 
 def _request_id(action: ActionType, description: str) -> str:
-    stamp = datetime.utcnow().strftime("%H%M%S")
+    stamp = datetime.now(UTC).strftime("%H%M%S")
     return f"{action.value}-{stamp}-{hash(description) % 10000:04d}"
 
 
-def _find(queue: List[ApprovalRequest], request_id: str) -> Optional[ApprovalRequest]:
+def _find(queue: list[ApprovalRequest], request_id: str) -> ApprovalRequest | None:
     for req in queue:
         if req.id == request_id:
             return req
     return None
 
 
-def _decide(queue: List[ApprovalRequest], history: List[ApprovalRequest], request_id: str, decision: Decision) -> Optional[ApprovalRequest]:
+def _decide(queue: list[ApprovalRequest], history: list[ApprovalRequest], request_id: str, decision: Decision) -> ApprovalRequest | None:
     req = _find(queue, request_id)
     if not req:
         return None

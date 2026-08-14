@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
 
 
-def build_training_records(texts: Sequence[str]) -> List[dict]:
+def build_training_records(texts: Sequence[str]) -> list[dict]:
     return [{"text": t} for t in texts if t.strip()]
 
 
-def save_jsonl(records: List[dict], path: Path) -> None:
+def save_jsonl(records: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         for rec in records:
@@ -21,15 +21,15 @@ def save_jsonl(records: List[dict], path: Path) -> None:
 def package_module_outputs(
     *,
     manifest_path: Path,
-    adapter_bytes: Optional[bytes] = None,
-    adapter_config: Optional[dict] = None,
-    chunks: Optional[List[str]] = None,
-    system_prompt: Optional[str] = None,
-    few_shot: Optional[List[dict]] = None,
-    tools: Optional[dict] = None,
-    tests: Optional[dict] = None,
-) -> Dict[str, bytes]:
-    files: Dict[str, bytes] = {}
+    adapter_bytes: bytes | None = None,
+    adapter_config: dict | None = None,
+    chunks: list[str] | None = None,
+    system_prompt: str | None = None,
+    few_shot: list[dict] | None = None,
+    tools: dict | None = None,
+    tests: dict | None = None,
+) -> dict[str, bytes]:
+    files: dict[str, bytes] = {}
     if adapter_bytes:
         files["weights/adapter.safetensors"] = adapter_bytes
     if adapter_config:
@@ -53,7 +53,7 @@ def write_adapter_bytes(path: Path, payload: bytes) -> None:
     path.write_bytes(payload)
 
 
-def extract_adapter_dir(apkg_path: Path, dest: Optional[Path] = None) -> Path:
+def extract_adapter_dir(apkg_path: Path, dest: Path | None = None) -> Path:
     import zipfile
     source = Path(apkg_path)
     if not zipfile.is_zipfile(source):

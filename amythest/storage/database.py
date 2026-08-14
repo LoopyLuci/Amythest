@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable, List, Optional
-from urllib.parse import quote
 
-from amythest.types import ModuleManifest, ModuleType
+from amythest.types import ModuleManifest
 
 
 @dataclass(frozen=True)
@@ -18,7 +15,7 @@ class StoredModule:
     manifest: ModuleManifest
     path: Path
     installed_at: datetime
-    last_activated_at: Optional[datetime] = None
+    last_activated_at: datetime | None = None
     active: bool = False
 
 
@@ -67,7 +64,7 @@ class ModuleDatabase:
             )
 
     def install(self, manifest: ModuleManifest, path: Path) -> StoredModule:
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """
@@ -88,7 +85,7 @@ class ModuleDatabase:
             )
         return self.get(manifest.name, manifest.version)
 
-    def get(self, name: str, version: str) -> Optional[StoredModule]:
+    def get(self, name: str, version: str) -> StoredModule | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM modules WHERE name = ? AND version = ?",
@@ -98,13 +95,13 @@ class ModuleDatabase:
             return None
         return self._row_to_module(row)
 
-    def list_modules(self) -> List[StoredModule]:
+    def list_modules(self) -> list[StoredModule]:
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM modules ORDER BY name, version").fetchall()
         return [self._row_to_module(row) for row in rows]
 
-    def activate(self, name: str, version: str, context: Optional[str] = None) -> None:
-        now = datetime.utcnow().isoformat()
+    def activate(self, name: str, version: str, context: str | None = None) -> None:
+        now = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "UPDATE modules SET active = 1, last_activated_at = ? WHERE name = ? AND version = ?",

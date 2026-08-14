@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import zipfile
 from pathlib import Path
-from typing import Dict, Optional, Union
 
 from amythest.types import ModuleManifest
 
@@ -19,14 +17,14 @@ class ApkgError(Exception):
 REQUIRED_FILES = ["manifest.json"]
 
 
-def read_apkg(path: Union[str, Path]) -> Dict[str, object]:
+def read_apkg(path: str | Path) -> dict[str, object]:
     source = Path(path)
     if not source.exists():
         raise ApkgError(f"Module package not found: {source}")
     if not zipfile.is_zipfile(source):
         raise ApkgError(f"Not a valid .apkg zip archive: {source}")
 
-    out: Dict[str, object] = {"manifest": None, "files": {}, "root": source}
+    out: dict[str, object] = {"manifest": None, "files": {}, "root": source}
     with zipfile.ZipFile(source, "r") as zf:
         namelist = zf.namelist()
         missing = [f for f in REQUIRED_FILES if f not in namelist]
@@ -42,25 +40,51 @@ def read_apkg(path: Union[str, Path]) -> Dict[str, object]:
 
 
 def write_apkg(
-    path: Union[str, Path],
+    path: str | Path,
     manifest: ModuleManifest,
-    files: Optional[Dict[str, bytes]] = None,
+    files: dict[str, bytes] | None = None,
 ) -> Path:
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
     files = files or {}
     if "manifest.json" in files:
         raise ApkgError("Do not include manifest.json in files; pass manifest explicitly.")
+    payload = _manifest_payload(manifest)
     with zipfile.ZipFile(dest, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("manifest.json", manifest.to_json())
+        zf.writestr("manifest.json", payload)
         for name, data in files.items():
             zf.writestr(name, data)
     return dest
 
 
-def sha256_file(path: Union[str, Path]) -> str:
+def sha256_file(path: str | Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _manifest_payload(manifest: ModuleManifest) -> str:
+    payload = {
+        "name": manifest.name,
+        "version": manifest.version,
+        "author": manifest.author,
+        "description": manifest.description,
+        "type": manifest.module_type.value,
+        "base_model": {
+            "name": manifest.base_model_name,
+            "version": manifest.base_model_version,
+            "architecture": manifest.base_model_architecture,
+        },
+        "dependencies": manifest.dependencies,
+        "injection_ports": manifest.injection_ports,
+        "size_mb": manifest.size_mb,
+        "tags": manifest.tags,
+        "benchmark_score": manifest.benchmark_score,
+        "sha256": None,
+    }
+    encoded = json.dumps(payload, indent=2)
+    digest = hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+    payload["sha256"] = digest
+    return json.dumps(payload, indent=2)

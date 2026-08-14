@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import Optional
+from pathlib import Path
 
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 from amythest.backend.interface import GenerationRequest
 from amythest.backend.local import LocalBackend
-from amythest.core.manager import ModuleManager
+from amythest.core.checkpoint import Checkpoint, CheckpointManager
 from amythest.core.hitl import ActionType, HITLEngine
-from amythest.core.usage import UsageTracker, UsageRecord
-from amythest.core.checkpoint import CheckpointManager
+from amythest.core.manager import ModuleManager
+from amythest.core.usage import UsageRecord, UsageTracker
 from amythest.storage.database import ModuleDatabase
-from pathlib import Path
 
 app = FastAPI(title="Amythest Runtime")
 
@@ -59,7 +58,7 @@ class RecommendationOut(BaseModel):
     name: str
     version: str
     score: float
-    reason: string
+    reason: str
 
 
 class CompletionBody(BaseModel):
@@ -86,7 +85,7 @@ class UsageRecordBody(BaseModel):
     helpful: bool | None = None
 
 
-_backend_instance: Optional[LocalBackend] = None
+_backend_instance: LocalBackend | None = None
 
 
 def _local_backend() -> LocalBackend:
@@ -222,8 +221,11 @@ def create_checkpoint(body: CheckpointBody) -> dict:
 
 @app.post("/rollback")
 def rollback(body: RollbackBody) -> dict:
-    target = _checkpoint_manager.rollback(Checkpoint(path=Path(body.checkpoint_path)) if body.checkpoint_path else None)
-    return {"rolled_back_to": str(target.path), "active_modules": target.active_modules}
+    target: Checkpoint | None = None
+    if body.checkpoint_path:
+        target = Checkpoint(path=Path(body.checkpoint_path))
+    resolved = _checkpoint_manager.rollback(target)
+    return {"rolled_back_to": str(resolved.path), "active_modules": resolved.active_modules}
 
 
 @app.post("/hitl/{request_id}/approve")

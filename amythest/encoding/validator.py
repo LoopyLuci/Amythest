@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List
 
 from amythest.package import ApkgError, read_apkg
 from amythest.types import ModuleManifest, ModuleType
@@ -11,8 +11,8 @@ from amythest.types import ModuleManifest, ModuleType
 
 class ValidationResult:
     def __init__(self) -> None:
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
         self.benchmark_score: float | None = None
 
     @property
@@ -45,21 +45,19 @@ def validate_package(path: Path) -> ValidationResult:
         return result
     manifest = package["manifest"]
     validate_manifest(manifest, result)
-    if manifest.module_type == ModuleType.KNOWLEDGE:
-        if "index/chunks.jsonl" not in package["files"]:
-            result.warnings.append("Knowledge modules should include an index/chunks.jsonl.")
-    if manifest.module_type in {ModuleType.SKILL, ModuleType.PERSONALITY}:
-        if "templates/system_prompt.txt" not in package["files"]:
-            result.warnings.append("Skill/personality modules usually include templates/system_prompt.txt.")
+    if manifest.module_type == ModuleType.KNOWLEDGE and "index/chunks.jsonl" not in package["files"]:
+        result.warnings.append("Knowledge modules should include an index/chunks.jsonl.")
+    if manifest.module_type in {ModuleType.SKILL, ModuleType.PERSONALITY} and "templates/system_prompt.txt" not in package["files"]:
+        result.warnings.append("Skill/personality modules usually include templates/system_prompt.txt.")
     if "tests/benchmark.jsonl" not in package["files"]:
         result.warnings.append("Missing tests/benchmark.jsonl.")
     return result
 
 
-def detect_conflicts(modules: Iterable[ModuleManifest]) -> List[str]:
+def detect_conflicts(modules: Iterable[ModuleManifest]) -> list[str]:
     items = list(modules)
-    conflicts: List[str] = []
-    seen: Dict[str, str] = {}
+    conflicts: list[str] = []
+    seen: dict[str, str] = {}
     for m in items:
         key = m.name
         if key in seen:

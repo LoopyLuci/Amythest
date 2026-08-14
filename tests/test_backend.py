@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 from fastapi.testclient import TestClient
 
 from amythest.backend.server import app

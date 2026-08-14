@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 
 from amythest.cli.main import main
-from amythest.types import ModuleManifest, ModuleType
+from amythest.types import ModuleType
 
 
 @pytest.fixture()

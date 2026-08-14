@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Dict
 
 
 def python_knowledge_text() -> str:
@@ -30,7 +28,7 @@ def agent_skill_text() -> str:
     ])
 
 
-def knowledge_module_files() -> Dict[str, bytes]:
+def knowledge_module_files() -> dict[str, bytes]:
     chunks = [line for line in python_knowledge_text().splitlines() if line.strip()]
     payload = "\n".join(chunks).encode("utf-8")
     return {
@@ -39,7 +37,7 @@ def knowledge_module_files() -> Dict[str, bytes]:
     }
 
 
-def skill_module_files() -> Dict[str, bytes]:
+def skill_module_files() -> dict[str, bytes]:
     chunks = [line for line in agent_skill_text().splitlines() if line.strip()]
     examples = "\n".join(
         json.dumps({"input": chunk[:20], "expected": chunk}) for chunk in chunks
@@ -47,6 +45,6 @@ def skill_module_files() -> Dict[str, bytes]:
     return {
         "few_shot_examples.jsonl": examples.encode("utf-8"),
         "templates/system_prompt.txt": (
-            "You are Amythest's agentic runtime. Follow these principles:\n"
-        ).encode("utf-8") + agent_skill_text().encode("utf-8"),
+            b"You are Amythest's agentic runtime. Follow these principles:\n"
+        ) + agent_skill_text().encode("utf-8"),
     }

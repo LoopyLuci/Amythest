@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
 
-from amythest.storage.database import ModuleDatabase, StoredModule
-from amythest.types import ModuleManifest, ModuleType
-from amythest.package import ApkgError, read_apkg, write_apkg
 from amythest.core.analyzer import Task, TaskAnalyzer
+from amythest.package import read_apkg, write_apkg
+from amythest.storage.database import ModuleDatabase, StoredModule
+from amythest.types import ModuleManifest
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class ConflictReport:
 
 
 class ModuleManager:
-    def __init__(self, db: ModuleDatabase, index_path: Optional[Path] = None) -> None:
+    def __init__(self, db: ModuleDatabase, index_path: Path | None = None) -> None:
         self.db = db
         self.analyzer = TaskAnalyzer(index_path=index_path)
 
@@ -59,7 +59,7 @@ class ModuleManager:
             )
         logger.info("Uninstalled module %s==%s", name, version)
 
-    def activate(self, name: str, version: str, context: Optional[str] = None) -> StoredModule:
+    def activate(self, name: str, version: str, context: str | None = None) -> StoredModule:
         stored = self.db.get(name, version)
         if not stored:
             raise KeyError(f"Module not found: {name}=={version}")
@@ -82,10 +82,10 @@ class ModuleManager:
         self._rebuild_index()
         return self.db.get(name, version)
 
-    def active_modules(self) -> List[StoredModule]:
+    def active_modules(self) -> list[StoredModule]:
         return [m for m in self.db.list_modules() if m.active]
 
-    def discover(self, query: str = "") -> List[StoredModule]:
+    def discover(self, query: str = "") -> list[StoredModule]:
         modules = self.db.list_modules()
         if not query:
             return modules
@@ -101,15 +101,15 @@ class ModuleManager:
     def create_package(
         self,
         manifest: ModuleManifest,
-        files: Optional[Dict[str, bytes]] = None,
-        destination: Optional[Path] = None,
+        files: dict[str, bytes] | None = None,
+        destination: Path | None = None,
     ) -> Path:
         files = files or {}
         if destination is None:
             destination = Path(".") / f"{manifest.name}-{manifest.version}.apkg"
         return write_apkg(destination, manifest, files)
 
-    def compose(self) -> Dict[str, object]:
+    def compose(self) -> dict[str, object]:
         active = self.active_modules()
         return {
             "active_count": len(active),
@@ -126,7 +126,7 @@ class ModuleManager:
             ],
         }
 
-    def recommend_modules(self, description: str, top_k: int = 5) -> List[ModuleRecommendation]:
+    def recommend_modules(self, description: str, top_k: int = 5) -> list[ModuleRecommendation]:
         modules = self.db.list_modules()
         task = Task(description=description)
         return self.analyzer.recommend(task, modules, top_k=top_k)
@@ -145,8 +145,8 @@ class ModuleManager:
         except Exception:
             logger.debug("Index rebuild skipped", exc_info=True)
 
-    def _detect_conflicts(self, candidate: ModuleManifest, active: Iterable[ModuleManifest]) -> List[ConflictReport]:
-        reports: List[ConflictReport] = []
+    def _detect_conflicts(self, candidate: ModuleManifest, active: Iterable[ModuleManifest]) -> list[ConflictReport]:
+        reports: list[ConflictReport] = []
         dep_names = {d["name"] for d in candidate.dependencies}
         for existing in active:
             if existing.name == candidate.name:

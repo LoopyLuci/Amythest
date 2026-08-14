@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
+from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Sequence, Tuple
 
 from amythest.core.analyzer import ModuleRecommendation, Task
 
@@ -37,7 +36,7 @@ class ModuleIndex:
                 version = getattr(m, "version", "")
             text = f"{name} {desc} {' '.join(tags)}"
             texts.append(text)
-            rows.append((idx, name, version, text, datetime.utcnow().isoformat()))
+            rows.append((idx, name, version, text, datetime.now(UTC).isoformat()))
         embeddings = _embed(texts)
         import faiss
         index = faiss.IndexFlatL2(self.dim)
@@ -48,7 +47,7 @@ class ModuleIndex:
             conn.execute("DELETE FROM items")
             conn.executemany("INSERT INTO items VALUES (?, ?, ?, ?, ?)", rows)
 
-    def search(self, task: Task, top_k: int = 5) -> List[ModuleRecommendation]:
+    def search(self, task: Task, top_k: int = 5) -> list[ModuleRecommendation]:
         if not self.index_path().exists():
             return []
         q = _embed([task.description])
@@ -65,18 +64,18 @@ class ModuleIndex:
             row = by_id.get(int(idx))
             if not row:
                 continue
-            _id, name, version, text = row
+            _row_id, name, version, _text = row
             results.append(ModuleRecommendation(name=name, version=version, score=float(scores[0][rank]), reason="Embedding similarity"))
         results.sort(key=lambda x: x.score)
         return results
 
 
-def _embed(texts: Sequence[str]) -> "np.ndarray":
+def _embed(texts: Sequence[str]) -> np.ndarray:
     import numpy as np
     try:
         from sentence_transformers import SentenceTransformer
         model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
         vecs = model.encode(texts, normalize_embeddings=True)
         return np.array(vecs, dtype="float32")
-    except Exception:
+    except RuntimeError:
         return np.zeros((len(texts), 384), dtype="float32")

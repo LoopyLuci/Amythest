@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 from amythest.core.manager import ModuleManager
 from amythest.storage.database import ModuleDatabase
-from pathlib import Path
 
 
 def benchmark_activation_latency(iterations: int = 20) -> dict:
@@ -19,7 +19,7 @@ def benchmark_activation_latency(iterations: int = 20) -> dict:
         for m in modules:
             try:
                 manager.activate(m.manifest.name, m.manifest.version, context="benchmark")
-            except Exception:
+            except RuntimeError:
                 pass
         elapsed = time.perf_counter() - start
         samples.append(elapsed)

@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import click
 from rich.console import Console
@@ -13,7 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from amythest.core.manager import ModuleManager
-from amythest.encoding.pipeline import build_knowledge_payload, ingest_directory, ingest_text
+from amythest.encoding.pipeline import ingest_directory, ingest_text
 from amythest.package import write_apkg
 from amythest.storage.database import ModuleDatabase
 from amythest.types import ModuleManifest, ModuleType
@@ -56,7 +53,7 @@ def create(
     base_model: str,
     base_model_version: str,
     base_model_architecture: str,
-    output_path: Optional[Path],
+    output_path: Path | None,
 ) -> None:
     """Create a new .apkg module from SOURCE."""
     if not source.exists():
@@ -79,7 +76,6 @@ def create(
             chunks = ingest_directory(source)
         else:
             chunks = ingest_text(source)
-        payload = build_knowledge_payload(chunks)
         files["chunks.jsonl"] = "\n".join(chunks).encode("utf-8")
         files["index/chunks.jsonl"] = files["chunks.jsonl"]
         tags = list({chunk.split()[0] for chunk in chunks[:10] if chunk.strip()})[:5]
@@ -135,7 +131,7 @@ def install(package: Path, force: bool) -> None:
 @click.argument("name")
 @click.argument("version")
 @click.option("--context", default=None, help="Optional activation context description.")
-def activate(name: str, version: str, context: Optional[str]) -> None:
+def activate(name: str, version: str, context: str | None) -> None:
     """Activate a module."""
     manager = _default_manager()
     try:

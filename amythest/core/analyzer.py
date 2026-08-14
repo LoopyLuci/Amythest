@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Sequence
 
 
 @dataclass(frozen=True)
@@ -12,7 +12,7 @@ class Task:
     description: str
     kind: str = "general"
     priority: str = "normal"
-    context: Optional[str] = None
+    context: str | None = None
 
 
 @dataclass(frozen=True)
@@ -24,16 +24,16 @@ class ModuleRecommendation:
 
 
 class TaskAnalyzer:
-    def __init__(self, index_path: Optional[Path] = None) -> None:
+    def __init__(self, index_path: Path | None = None) -> None:
         self.index_path = index_path
 
-    def recommend(self, task: Task, modules: Sequence[object], top_k: int = 5) -> List[ModuleRecommendation]:
+    def recommend(self, task: Task, modules: Sequence[object], top_k: int = 5) -> list[ModuleRecommendation]:
         semantic = self._semantic_recommend(task, modules, top_k=top_k)
         if semantic:
             return semantic
         return self._keyword_recommend(task, modules, top_k=top_k)
 
-    def _semantic_recommend(self, task: Task, modules: Sequence[object], top_k: int = 5) -> List[ModuleRecommendation]:
+    def _semantic_recommend(self, task: Task, modules: Sequence[object], top_k: int = 5) -> list[ModuleRecommendation]:
         if not self.index_path or not self.index_path.exists():
             return []
         try:
@@ -42,12 +42,12 @@ class TaskAnalyzer:
             results = index.search(task, top_k=top_k)
             if results:
                 return results
-        except Exception:
+        except RuntimeError:
             return []
         return []
 
-    def _keyword_recommend(self, task: Task, modules: Sequence[object], top_k: int = 5) -> List[ModuleRecommendation]:
-        scored: List[ModuleRecommendation] = []
+    def _keyword_recommend(self, task: Task, modules: Sequence[object], top_k: int = 5) -> list[ModuleRecommendation]:
+        scored: list[ModuleRecommendation] = []
         keywords = task.description.lower().split()
         for m in modules:
             if isinstance(m, dict):

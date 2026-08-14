@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 
 @dataclass(frozen=True)
@@ -16,7 +14,7 @@ class UsageRecord:
     module_name: str
     module_version: str
     active: bool
-    helpful: Optional[bool]
+    helpful: bool | None
     timestamp: datetime
 
 
@@ -61,7 +59,7 @@ class UsageTracker:
                 ),
             )
 
-    def helpful_rate(self, module_name: str, module_version: str) -> Optional[float]:
+    def helpful_rate(self, module_name: str, module_version: str) -> float | None:
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT helpful FROM usage WHERE module_name = ? AND module_version = ? AND helpful IS NOT NULL",

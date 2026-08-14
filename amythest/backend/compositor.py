@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import List
 
-
-def compose_prompt(base_prompt: str, modules: List[dict]) -> str:
-    parts: List[str] = []
+def compose_prompt(base_prompt: str, modules: list[dict]) -> str:
+    parts: list[str] = []
     for m in modules:
         m_type = m.get("type", "")
         if m_type in {"knowledge", "composite"}:

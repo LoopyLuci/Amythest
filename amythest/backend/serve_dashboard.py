@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 from amythest.backend.server import app
-from amythest.storage.database import ModuleDatabase
-from amythest.core.manager import ModuleManager
 from amythest.core.hitl import HITLEngine
-from pathlib import Path
+from amythest.core.manager import ModuleManager
+from amythest.storage.database import ModuleDatabase
 
 static_dir = Path(__file__).resolve().parent.parent / "web" / "out"
 web_dir = Path(__file__).resolve().parent.parent / "web"
@@ -20,13 +17,13 @@ web_dir = Path(__file__).resolve().parent.parent / "web"
 def build_dashboard() -> Path:
     if not web_dir.exists():
         raise RuntimeError(f"Web directory not found: {web_dir}")
-    result = subprocess.run(["npm.cmd", "run", "build"], cwd=web_dir, capture_output=True, text=True, shell=False)
+    result = subprocess.run(["npm.cmd", "run", "build"], cwd=web_dir, capture_output=True, text=True, shell=False, check=False)
     if result.returncode != 0:
         raise RuntimeError(f"npm build failed: {result.stderr}")
     return static_dir
 
 
-def serve_dashboard(host: str = "127.0.0.1", port: int = 8125, static_path: Path = None) -> None:
+def serve_dashboard(host: str = "127.0.0.1", port: int = 8125, static_path: Path | None = None) -> None:
     from fastapi.staticfiles import StaticFiles
     from uvicorn import Config, Server
 

@@ -2,4 +2,4 @@ from amythest.backend.interface import GenerationRequest, GenerationResponse, Mo
 from amythest.backend.local import LocalBackend, ModelState
 from amythest.backend.remote import RemoteBackend
 
-__all__ = ["GenerationRequest", "GenerationResponse", "ModelBackend", "LocalBackend", "ModelState", "RemoteBackend"]
+__all__ = ["GenerationRequest", "GenerationResponse", "LocalBackend", "ModelBackend", "ModelState", "RemoteBackend"]

@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -14,7 +12,7 @@ class TrainingConfig:
     output_dir: Path
     rank: int = 16
     alpha: int = 32
-    target_modules: List[str] = None
+    target_modules: list[str] = None
     max_steps: int = 200
     learning_rate: float = 2e-4
     batch_size: int = 4
@@ -33,7 +31,7 @@ def train_lora_adapter(
     try:
         from datasets import load_dataset
         from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-        from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+        from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
     except Exception as exc:
         raise RuntimeError(f"Training dependencies missing: {exc}") from exc
 
@@ -77,5 +75,5 @@ def _has_peft() -> bool:
     try:
         import peft  # noqa: F401
         return True
-    except Exception:
+    except ModuleNotFoundError:
         return False

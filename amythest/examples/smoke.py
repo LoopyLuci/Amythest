@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from amythest.core.checkpoint import CheckpointManager
 from amythest.core.hitl import ActionType, HITLEngine
 from amythest.core.module_index import ModuleIndex
 from amythest.core.usage import UsageRecord, UsageTracker
-from amythest.examples.real_builder import build_real_knowledge_module, build_real_skill_module, install_real_examples
+from amythest.examples.real_builder import (
+    build_real_knowledge_module,
+    build_real_skill_module,
+    install_real_examples,
+)
 from amythest.storage.database import ModuleDatabase
 
 
@@ -27,7 +31,7 @@ def run_smoke() -> dict:
     recs = index.search(type("Task", (), {"description": "python asyncio taskgroups and exceptions"})(), top_k=3)
 
     tracker = UsageTracker(out / ".amythest" / "usage.db")
-    tracker.record(UsageRecord(task_category="python", module_name="python-3.12-knowledge", module_version="1.1.0", active=True, helpful=True, timestamp=datetime.utcnow()))
+    tracker.record(UsageRecord(task_category="python", module_name="python-3.12-knowledge", module_version="1.1.0", active=True, helpful=True, timestamp=datetime.now(UTC)))
 
     cp = CheckpointManager(out / "checkpoints").create(["python-3.12-knowledge"], metadata={"smoke": True})
     hitl = HITLEngine()

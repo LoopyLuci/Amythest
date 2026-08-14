@@ -41,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <a href="/hitl" className="px-2 py-1 border border-white/10 rounded text-xs">HITL</a>
             <a href="/usage" className="px-2 py-1 border border-white/10 rounded text-xs">Usage</a>
             <a href="/metrics" className="px-2 py-1 border border-white/10 rounded text-xs">Metrics</a>
+            <a href="/playground" className="px-2 py-1 border border-white/10 rounded text-xs">Playground</a>
           </div>
         </header>
         <main className="p-4 grid gap-4">

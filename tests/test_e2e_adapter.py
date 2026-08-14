@@ -6,14 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from amythest.encoding.trainer import build_training_records, save_jsonl, extract_adapter_dir
-from amythest.encoding.pipeline import encode_training_records
-from amythest.types import ModuleManifest, ModuleType
-from amythest.package import write_apkg
-from amythest.core.manager import ModuleManager
-from amythest.storage.database import ModuleDatabase
 from amythest.backend.local import LocalBackend
-from amythest.backend.interface import GenerationRequest
+from amythest.core.manager import ModuleManager
+from amythest.encoding.trainer import extract_adapter_dir
+from amythest.package import write_apkg
+from amythest.storage.database import ModuleDatabase
+from amythest.types import ModuleManifest, ModuleType
 
 
 def test_extract_adapter_dir_from_apkg(tmp_path: Path) -> None:
@@ -54,7 +52,7 @@ def test_inject_modules_extracts_apkg(tmp_path: Path) -> None:
     )
     files = {
         "weights/adapter.safetensors": b"fake-bytes",
-        "weights/adapter_config.json": b'{"base_model_name":"distilgpt2"}',
+        "weights/adapter_config.json": b'{"base_model_name":"distilgpt2","peft_type":"LORA","task_type":"CAUSAL_LM"}',
     }
     pkg = write_apkg(out_dir / "inject.apkg", manifest, files=files)
     db = ModuleDatabase(tmp_path / ".amythest" / "modules")
@@ -63,5 +61,5 @@ def test_inject_modules_extracts_apkg(tmp_path: Path) -> None:
     manager.activate(manifest.name, manifest.version, context="test")
     backend = LocalBackend(cache_dir=tmp_path / "cache")
     backend.ensure_model("distilgpt2")
-    with pytest.raises(Exception):
+    with pytest.raises((RuntimeError, ValueError)):
         backend.inject_modules([{"name": manifest.name, "adapter_path": str(pkg)}])

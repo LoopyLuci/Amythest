@@ -5,7 +5,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -14,8 +13,8 @@ class GenerationRequest:
     max_tokens: int = 256
     temperature: float = 0.2
     top_p: float = 0.95
-    stop: Optional[List[str]] = None
-    extra: Dict[str, object] | None = None
+    stop: list[str] | None = None
+    extra: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -24,16 +23,16 @@ class GenerationResponse:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     model: str = ""
-    active_modules: List[str] | None = None
+    active_modules: list[str] | None = None
 
 
 class ModelBackend(ABC):
     @abstractmethod
-    def load_base_model(self, model_name: str, model_path: Optional[Path] = None) -> None:
+    def load_base_model(self, model_name: str, model_path: Path | None = None) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def inject_modules(self, modules: List[Dict[str, object]]) -> None:
+    def inject_modules(self, modules: list[dict[str, object]]) -> None:
         raise NotImplementedError
 
     @abstractmethod

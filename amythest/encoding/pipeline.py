@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 
-def chunk_text(text: str, size: int = 512, overlap: int = 64) -> List[str]:
-    chunks: List[str] = []
+def chunk_text(text: str, size: int = 512, overlap: int = 64) -> list[str]:
+    chunks: list[str] = []
     start = 0
     while start < len(text):
         end = min(start + size, len(text))
@@ -16,17 +16,17 @@ def chunk_text(text: str, size: int = 512, overlap: int = 64) -> List[str]:
     return chunks
 
 
-def ingest_text(path: Path, size: int = 512, overlap: int = 64) -> List[str]:
+def ingest_text(path: Path, size: int = 512, overlap: int = 64) -> list[str]:
     return chunk_text(path.read_text(encoding="utf-8", errors="replace"), size=size, overlap=overlap)
 
 
-def ingest_directory(root: Path, size: int = 512, overlap: int = 64) -> List[str]:
-    chunks: List[str] = []
+def ingest_directory(root: Path, size: int = 512, overlap: int = 64) -> list[str]:
+    chunks: list[str] = []
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
         if path.suffix.lower() in {".py", ".md", ".txt", ".json", ".yaml", ".yml"}:
             try:
                 chunks.extend(ingest_text(path, size=size, overlap=overlap))
-            except Exception:
+            except OSError:
                 continue
     return chunks
 
@@ -36,7 +36,7 @@ def build_knowledge_payload(chunks: Iterable[str]) -> dict:
     return {"chunk_count": len(items), "preview": "\n\n".join(items[:5])}
 
 
-def encode_training_records(records: Iterable[dict]) -> List[str]:
+def encode_training_records(records: Iterable[dict]) -> list[str]:
     items = []
     for record in records:
         text = record.get("text")

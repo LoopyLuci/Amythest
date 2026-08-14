@@ -3,9 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
-from amythest.core.hitl import ActionType, Policy
+from amythest.core.hitl import ActionType
 from amythest.core.policy_loader import load_policies
 
 

@@ -1,14 +1,14 @@
 """HITL policy loader."""
 from __future__ import annotations
 
-import yaml
 from pathlib import Path
-from typing import List
 
-from amythest.core.hitl import Policy, ActionType
+import yaml
+
+from amythest.core.hitl import ActionType, Policy
 
 
-def load_policies(path: Path) -> List[Policy]:
+def load_policies(path: Path) -> list[Policy]:
     if not path.exists():
         return []
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or []

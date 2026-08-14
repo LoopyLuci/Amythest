@@ -45,6 +45,8 @@ module.apkg
   "size_mb": 45,
   "created_at": "2026-08-04T00:00:00Z",
   "tags": ["programming", "python", "stdlib"],
-  "benchmark_score": 0.94
+  "benchmark_score": 0.94,
+  "sha256": "sha256hashofmanifest"
 }
 ```
+

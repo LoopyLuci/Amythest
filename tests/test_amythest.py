@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
 
-from amythest.core.manager import ConflictReport, ModuleManager
+from amythest.core.manager import ModuleManager
 from amythest.package import ApkgError, read_apkg, write_apkg
 from amythest.storage.database import ModuleDatabase
 from amythest.types import ModuleManifest, ModuleType

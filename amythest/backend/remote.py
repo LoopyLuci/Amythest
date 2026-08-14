@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 import httpx
 
 from amythest.backend.interface import GenerationRequest, GenerationResponse, ModelBackend
@@ -14,12 +12,12 @@ class RemoteBackend(ModelBackend):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model_name = ""
-        self.active_modules: List[str] = []
+        self.active_modules: list[str] = []
 
     def load_base_model(self, model_name: str, model_path: None = None) -> None:
         self.model_name = model_name
 
-    def inject_modules(self, modules: List[Dict[str, object]]) -> None:
+    def inject_modules(self, modules: list[dict[str, object]]) -> None:
         names = [str(m.get("name", "")) for m in modules if m.get("name")]
         self.active_modules = names
 

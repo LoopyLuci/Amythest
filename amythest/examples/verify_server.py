@@ -9,12 +9,12 @@ import time
 from pathlib import Path
 
 import requests
+from uvicorn import Config, Server
 
 from amythest.backend.server import app
-from amythest.core.manager import ModuleManager
 from amythest.core.hitl import HITLEngine
+from amythest.core.manager import ModuleManager
 from amythest.storage.database import ModuleDatabase
-from uvicorn import Config, Server
 
 
 def free_port() -> int:
@@ -41,7 +41,7 @@ def wait_for_server(base: str, timeout: int = 10) -> None:
         try:
             requests.get(base + "/status", timeout=1)
             return
-        except Exception:
+        except requests.ConnectionError:
             time.sleep(0.25)
     raise RuntimeError(f"Server did not become ready at {base}")
 

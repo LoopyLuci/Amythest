@@ -4,16 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from amythest.core.checkpoint import CheckpointManager
+from amythest.core.manager import ModuleManager
 from amythest.core.module_index import ModuleIndex
-from amythest.core.usage import UsageTracker, UsageRecord
+from amythest.core.usage import UsageRecord, UsageTracker
 from amythest.examples.smoke import run_smoke
 from amythest.package import write_apkg
 from amythest.storage.database import ModuleDatabase
 from amythest.types import ModuleManifest, ModuleType
-from amythest.core.manager import ModuleManager
 
 
 def test_checkpoint_manager_round_trip(tmp_path: Path) -> None:
