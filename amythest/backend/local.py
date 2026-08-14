@@ -39,29 +39,36 @@ class LocalBackend(ModelBackend):
         self.active_adapters: Dict[str, Path] = {}
         self.state: Optional[ModelState] = None
 
-    def load_base_model(self, model_name: str, model_path: Optional[Path] = None) -> None:
+    def load_base_model(self, model_name: str, model_path: Optional[Path] = None, device_map: str = "auto", load_in_4bit: bool = False) -> None:
         if not HAS_TRANSFORMERS:
             raise RuntimeError("transformers/torch not installed; cannot load local model.")
         source = model_path or model_name
         self.tokenizer = AutoTokenizer.from_pretrained(source, cache_dir=self.cache_dir)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            source,
-            cache_dir=self.cache_dir,
-            device_map="auto" if _cuda_available() else "cpu",
-            torch_dtype=torch.float32,
-        )
+        model_kwargs: Dict[str, object] = {
+            "cache_dir": self.cache_dir,
+            "device_map": device_map if device_map in {"auto", "cpu", "cuda", "mps"} else "auto",
+            "torch_dtype": torch.float32,
+        }
+        if load_in_4bit:
+            try:
+                from transformers import BitsAndBytesConfig  # type: ignore
+                model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
+            except Exception:
+                load_in_4bit = False
+        self.model = AutoModelForCausalLM.from_pretrained(source, **model_kwargs)
         self.model_name = model_name
-        self.device = "cuda" if _cuda_available() else "cpu"
+        resolved_device = "cuda" if _cuda_available() else "cpu"
+        self.device = resolved_device
         self.state = ModelState(
             model_name=model_name,
             weight_hash=_weight_hash(self.model),
             device=self.device,
         )
 
-    def ensure_model(self, model_name: Optional[str] = None) -> None:
+    def ensure_model(self, model_name: Optional[str] = None, device_map: str = "auto", load_in_4bit: bool = False) -> None:
         if self.model is None or self.tokenizer is None:
             target = model_name or "distilgpt2"
-            self.load_base_model(target)
+            self.load_base_model(target, device_map=device_map, load_in_4bit=load_in_4bit)
 
     def inject_modules(self, modules: List[Dict[str, object]]) -> None:
         if not HAS_TRANSFORMERS or self.model is None:

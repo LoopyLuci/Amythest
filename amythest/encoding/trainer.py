@@ -46,3 +46,8 @@ def package_module_outputs(
     if tests:
         files["tests/benchmark.jsonl"] = "\n".join(json.dumps(x, ensure_ascii=False) for x in tests).encode("utf-8")
     return files
+
+
+def write_adapter_bytes(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)

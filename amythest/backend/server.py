@@ -10,6 +10,7 @@ from amythest.backend.local import LocalBackend
 from amythest.core.manager import ModuleManager
 from amythest.core.hitl import ActionType, HITLEngine
 from amythest.core.usage import UsageTracker, UsageRecord
+from amythest.core.checkpoint import CheckpointManager
 from amythest.storage.database import ModuleDatabase
 from pathlib import Path
 
@@ -20,12 +21,21 @@ _index_path = Path.home() / ".amythest" / "modules" / "module_index.db"
 _manager = ModuleManager(_db, index_path=_index_path)
 _hitl = HITLEngine()
 _usage = UsageTracker(Path.home() / ".amythest" / "usage.db")
+_checkpoint_manager = CheckpointManager(Path.home() / ".amythest" / "checkpoints")
 
 
 class EvaluateBody(BaseModel):
     action: str
     description: str
     payload: dict | None = None
+
+
+class CheckpointBody(BaseModel):
+    metadata: dict | None = None
+
+
+class RollbackBody(BaseModel):
+    checkpoint_path: str | None = None
 
 
 class ModuleOut(BaseModel):
@@ -199,6 +209,21 @@ def hitl_queue() -> list[dict]:
         }
         for r in _hitl.queue
     ]
+
+
+@app.post("/checkpoint")
+def create_checkpoint(body: CheckpointBody) -> dict:
+    checkpoint = _checkpoint_manager.create(
+        active_modules=[m.manifest.name + "==" + m.manifest.version for m in _manager.active_modules()],
+        metadata=body.metadata or {},
+    )
+    return {"checkpoint": str(checkpoint.path)}
+
+
+@app.post("/rollback")
+def rollback(body: RollbackBody) -> dict:
+    target = _checkpoint_manager.rollback(Checkpoint(path=Path(body.checkpoint_path)) if body.checkpoint_path else None)
+    return {"rolled_back_to": str(target.path), "active_modules": target.active_modules}
 
 
 @app.post("/hitl/{request_id}/approve")
