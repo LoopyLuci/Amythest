@@ -86,6 +86,10 @@ Endpoints:
 - `POST /modules/{name}/{version}/activate`
 - `POST /modules/{name}/{version}/deactivate`
 - `POST /recommend`
+- `POST /v1/completions`
+- `GET /metrics`
+- `POST /usage`
+- `GET /usage/rate`
 - `POST /hitl/evaluate`
 - `GET /hitl/queue`
 - `POST /hitl/{request_id}/approve`
@@ -112,6 +116,16 @@ Pages:
 - `/` live status, shortcuts, module composition, recommendations
 - `/modules` module table with activate/deactivate
 - `/hitl` approval queue with approve/reject
+- `/usage` usage recording and helpfulness rate
+- `/metrics` basic runtime metrics
+
+## Self-hosted deployment
+
+Build and run with Docker:
+```bash
+docker build -t amythest .
+docker run -p 8125:8125 amythest
+```
 
 ## Module package format
 

@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
+from amythest.backend.interface import GenerationRequest
+from amythest.backend.local import LocalBackend
 from amythest.core.manager import ModuleManager
 from amythest.core.hitl import ActionType, HITLEngine
 from amythest.core.usage import UsageTracker, UsageRecord
@@ -43,7 +49,23 @@ class RecommendationOut(BaseModel):
     name: str
     version: str
     score: float
-    reason: str
+    reason: string
+
+
+class CompletionBody(BaseModel):
+    prompt: str
+    max_tokens: int = 64
+    temperature: float = 0.2
+    top_p: float = 0.95
+    model: str | None = None
+
+
+class CompletionOut(BaseModel):
+    text: str
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    active_modules: list[str] | None = None
 
 
 class UsageRecordBody(BaseModel):
@@ -52,6 +74,16 @@ class UsageRecordBody(BaseModel):
     module_version: str
     active: bool
     helpful: bool | None = None
+
+
+_backend_instance: Optional[LocalBackend] = None
+
+
+def _local_backend() -> LocalBackend:
+    global _backend_instance
+    if _backend_instance is None:
+        _backend_instance = LocalBackend()
+    return _backend_instance
 
 
 @app.get("/status")
@@ -84,7 +116,7 @@ def deactivate_module(name: str, version: str) -> dict:
     return {"deactivated": name, "version": version}
 
 
-@app.post("/recommend", response_model=list[RecommendationOut])
+@app.post("/recommend")
 def recommend_modules(body: RecommendBody) -> list[dict]:
     results = _manager.recommend_modules(body.description, top_k=body.top_k)
     return [{"name": r.name, "version": r.version, "score": r.score, "reason": r.reason} for r in results]
@@ -100,6 +132,26 @@ def metrics() -> list[dict]:
         {"name": "modules_active", "value": float(len(active)), "unit": "count"},
         {"name": "hitl_queue_depth", "value": float(hitl_len), "unit": "count"},
     ]
+
+
+@app.post("/v1/completions", response_model=CompletionOut)
+def v1_completions(body: CompletionBody) -> dict:
+    backend = _local_backend()
+    backend.ensure_model(body.model)
+    request = GenerationRequest(
+        prompt=body.prompt,
+        max_tokens=body.max_tokens,
+        temperature=body.temperature,
+        top_p=body.top_p,
+    )
+    response = backend.generate(request)
+    return {
+        "text": response.text,
+        "model": response.model,
+        "prompt_tokens": response.prompt_tokens,
+        "completion_tokens": response.completion_tokens,
+        "active_modules": response.active_modules,
+    }
 
 
 @app.post("/usage")

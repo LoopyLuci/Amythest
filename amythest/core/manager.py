@@ -38,6 +38,7 @@ class ModuleManager:
             manifest.version,
             stored.path,
         )
+        self._rebuild_index()
         return stored
 
     def uninstall(self, name: str, version: str) -> None:
@@ -69,6 +70,7 @@ class ModuleManager:
             raise RuntimeError(f"Activation conflicts detected: {reasons}")
         self.db.activate(name, version, context=context)
         logger.info("Activated module %s==%s", name, version)
+        self._rebuild_index()
         return self.db.get(name, version)
 
     def deactivate(self, name: str, version: str) -> StoredModule:
@@ -77,6 +79,7 @@ class ModuleManager:
             raise KeyError(f"Module not found: {name}=={version}")
         self.db.deactivate(name, version)
         logger.info("Deactivated module %s==%s", name, version)
+        self._rebuild_index()
         return self.db.get(name, version)
 
     def active_modules(self) -> List[StoredModule]:
@@ -127,6 +130,20 @@ class ModuleManager:
         modules = self.db.list_modules()
         task = Task(description=description)
         return self.analyzer.recommend(task, modules, top_k=top_k)
+
+    def _rebuild_index(self) -> None:
+        index_path = getattr(self.analyzer, "index_path", None)
+        if not index_path:
+            return
+        try:
+            modules = self.db.list_modules()
+            if not modules:
+                return
+            from amythest.core.module_index import ModuleIndex
+            idx = ModuleIndex(index_path)
+            idx.build([m.manifest for m in modules])
+        except Exception:
+            logger.debug("Index rebuild skipped", exc_info=True)
 
     def _detect_conflicts(self, candidate: ModuleManifest, active: Iterable[ModuleManifest]) -> List[ConflictReport]:
         reports: List[ConflictReport] = []

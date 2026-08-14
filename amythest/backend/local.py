@@ -58,6 +58,11 @@ class LocalBackend(ModelBackend):
             device=self.device,
         )
 
+    def ensure_model(self, model_name: Optional[str] = None) -> None:
+        if self.model is None or self.tokenizer is None:
+            target = model_name or "distilgpt2"
+            self.load_base_model(target)
+
     def inject_modules(self, modules: List[Dict[str, object]]) -> None:
         if not HAS_TRANSFORMERS or self.model is None:
             raise RuntimeError("Model not loaded.")

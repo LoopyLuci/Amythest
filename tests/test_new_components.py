@@ -10,6 +10,10 @@ from amythest.core.checkpoint import CheckpointManager
 from amythest.core.module_index import ModuleIndex
 from amythest.core.usage import UsageTracker, UsageRecord
 from amythest.examples.smoke import run_smoke
+from amythest.package import write_apkg
+from amythest.storage.database import ModuleDatabase
+from amythest.types import ModuleManifest, ModuleType
+from amythest.core.manager import ModuleManager
 
 
 def test_checkpoint_manager_round_trip(tmp_path: Path) -> None:
@@ -44,3 +48,42 @@ def test_smoke_demo_runs() -> None:
     result = run_smoke()
     assert isinstance(result, dict)
     assert result.get("modules_installed", 0) >= 1
+
+
+def test_manager_rebuilds_index_after_install(tmp_path: Path) -> None:
+    db = ModuleDatabase(tmp_path / ".amythest" / "modules")
+    index_path = tmp_path / ".amythest" / "modules" / "module_index.db"
+    manager = ModuleManager(db, index_path=index_path)
+    manifest = ModuleManifest(
+        name="indexed-module",
+        version="1.0.0",
+        author="test",
+        description="Index test module",
+        module_type=ModuleType.KNOWLEDGE,
+        base_model_name="amythest-base",
+        base_model_version="0.1.0",
+        base_model_architecture="dense-70b",
+    )
+    pkg = write_apkg(tmp_path / "indexed.apkg", manifest)
+    manager.install_package(pkg)
+    assert index_path.exists()
+
+
+def test_manager_rebuilds_index_after_activate(tmp_path: Path) -> None:
+    db = ModuleDatabase(tmp_path / ".amythest" / "modules")
+    index_path = tmp_path / ".amythest" / "modules" / "module_index.db"
+    manager = ModuleManager(db, index_path=index_path)
+    manifest = ModuleManifest(
+        name="activate-index",
+        version="1.0.0",
+        author="test",
+        description="Activate index test",
+        module_type=ModuleType.SKILL,
+        base_model_name="amythest-base",
+        base_model_version="0.1.0",
+        base_model_architecture="dense-70b",
+    )
+    pkg = write_apkg(tmp_path / "activate.apkg", manifest)
+    manager.install_package(pkg)
+    manager.activate("activate-index", "1.0.0")
+    assert index_path.exists()

@@ -59,3 +59,19 @@ def test_usage_endpoints():
     body = r2.json()
     assert body["module_name"] == "python-3.12-knowledge"
     assert body["helpful_rate"] == 1.0
+
+
+def test_metrics_endpoint():
+    r = client.get("/metrics")
+    assert r.status_code == 200
+    body = r.json()
+    names = {m["name"] for m in body}
+    assert {"modules_total", "modules_active", "hitl_queue_depth"} <= names
+
+
+def test_completions_endpoint():
+    r = client.post("/v1/completions", json={"prompt": "hello", "max_tokens": 8})
+    assert r.status_code == 200
+    body = r.json()
+    assert "text" in body
+    assert body["model"] == "distilgpt2"

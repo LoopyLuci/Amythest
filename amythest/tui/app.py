@@ -20,6 +20,7 @@ from textual.widgets import (
     Input,
     RichLog,
     Static,
+    Timer,
 )
 
 from amythest.core.manager import ModuleManager
@@ -110,6 +111,7 @@ class AmythestApp(App):
             yield RightPanel()
         yield BottomPanel()
         yield Input(placeholder="/command or search modules...", id="command_input")
+        yield Timer(2, name="refresh_timer")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -200,6 +202,10 @@ class AmythestApp(App):
 
     def action_focus_input(self) -> None:
         self.query_one("#command_input", Input).focus()
+
+    def on_timer(self, event: Timer) -> None:
+        self.refresh_modules()
+        self.refresh_hitl()
 
     def action_show_modules(self) -> None:
         self.query_one(LeftPanel).remove_class("hidden")
