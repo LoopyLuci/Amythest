@@ -33,7 +33,7 @@ def main() -> None:
         base_model_version="1",
         base_model_architecture="dense-70b",
     )
-    pkg = write_apkg(out_dir / "demo.apkg", manifest, extra={"index/chunks.jsonl": "\n".join(encoded).encode("utf-8")})
+    pkg = write_apkg(out_dir / "demo.apkg", manifest, files={"index/chunks.jsonl": "\n".join(encoded).encode("utf-8")})
     db = ModuleDatabase(Path.home() / ".amythest" / "modules")
     manager = ModuleManager(db, index_path=Path.home() / ".amythest" / "modules" / "module_index.db")
     stored = manager.install_package(pkg)
