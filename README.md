@@ -152,6 +152,51 @@ dvc add tmp_training_artifacts/demo.apkg
 git commit -m "Add trained module artifact"
 ```
 
+## Task runners
+
+Use Make:
+```bash
+make verify
+make ci
+make clean
+```
+
+Or use just:
+```bash
+just verify
+just ci
+just clean
+```
+
+## Training extras
+
+Install training dependencies:
+```bash
+pip install -e ".[training]"
+```
+
+## CI/CD
+
+Local CI pipeline:
+```bash
+bash scripts/ci.sh
+```
+
+Local CD smoke test:
+```bash
+bash scripts/cd.sh
+```
+
+Local verification:
+```bash
+bash scripts/verify.sh
+```
+
+Publish DVC artifacts:
+```bash
+bash scripts/dvc_publish.sh
+```
+
 ## Module package format
 
 A `.apkg` is a zip archive:

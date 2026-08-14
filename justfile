@@ -1,4 +1,7 @@
-.PHONY: test web-build lint package verify ci cd clean training-install
+set shell := ["bash", "-lc"]
+
+default:
+	@just --list
 
 test:
 	python -m pytest tests/ -q
@@ -7,7 +10,7 @@ web-build:
 	cd web && npm run build
 
 lint:
-	ruff check amythest tests || echo "ruff issues found"
+	ruff check amythest tests
 	cd web && npx next lint || true
 
 package:
