@@ -21,3 +21,6 @@ web/node_modules/
 # OS
 Thumbs.db
 .DS_Store
+
+# Training artifacts (use DVC for versioned artifacts)
+tmp_training_artifacts/
