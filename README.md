@@ -141,6 +141,15 @@ dvc remote add -d local /path/to/remote
 Optional DVC-based model/artifact tracking:
 ```bash
 dvc add .amythest/cache
+dvc add tmp_training_artifacts
+```
+
+Typical workflow:
+```bash
+python amythest/examples/train_adapter.py
+git add amythest/examples/train_adapter.py tmp_training_artifacts/demo.apkg
+dvc add tmp_training_artifacts/demo.apkg
+git commit -m "Add trained module artifact"
 ```
 
 ## Module package format

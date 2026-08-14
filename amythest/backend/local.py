@@ -83,8 +83,12 @@ class LocalBackend(ModelBackend):
                 continue
             if name in self.active_adapters:
                 continue
-            self.model = PeftModel.from_pretrained(self.model, path)
-            self.active_adapters[name] = path
+            resolved = path
+            if path.suffix.lower() == ".apkg":
+                from amythest.encoding.trainer import extract_adapter_dir
+                resolved = extract_adapter_dir(path)
+            self.model = PeftModel.from_pretrained(self.model, resolved)
+            self.active_adapters[name] = resolved
 
     def generate(self, request: GenerationRequest) -> GenerationResponse:
         if self.model is None or self.tokenizer is None:

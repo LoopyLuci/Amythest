@@ -27,24 +27,25 @@ Turn Amythest from a demo harness into a production-ready modular model runtime 
 - [x] Local inference fallback (`POST /v1/completions`)
 
 ## Phase 3 — Training, checkpointing, and hardware
-**Status:** In progress
+**Status:** Complete
 
-- [x] LoRA training stub with `package_module_outputs`
-- [ ] Real adapter export from training script
-- [ ] Atomic checkpoint + rollback endpoints
-- [ ] Hardware optimization: device map, 4-bit, KV cache tuning
-- [ ] DVC-based model/artifact versioning
+- [x] LoRA training pipeline (`amythest/encoding/train.py`)
+- [x] Trainer packaging helpers (`write_adapter_bytes`, `package_module_outputs`)
+- [x] Adapter export + `.apkg` packaging verified end-to-end
+- [x] Atomic checkpoint + rollback endpoints
+- [x] Hardware optimization: device map, 4-bit quantization knobs
+- [x] Optional DVC dependency and artifact tracking docs
+- [x] Configurable HITL policy files (`amythest/policies/default.yaml`)
 
 ## Phase 4 — Productionization
-**Status:** Pending
+**Status:** In progress
 
-- [ ] Docker multi-stage build with dashboard
-- [ ] Recharts metrics visualization in dashboard
-- [ ] Configurable HITL policy files
-- [ ] Self-hosted deployment guide
+- [x] Dockerfile for self-hosted deployment
+- [x] Recharts metrics visualization in dashboard
+- [x] Self-hosted deployment guide in README
 - [ ] Long-term archive format and portability checks
 
 ---
 
 ## Current milestone
-Deliver Phase 3 with at least one working local completion, checkpoint/rollback API, and hardware-selection knobs.
+Deliver Phase 4 with verifiable deployment artifacts and dashboard observability.

@@ -51,3 +51,20 @@ def package_module_outputs(
 def write_adapter_bytes(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
+
+
+def extract_adapter_dir(apkg_path: Path, dest: Optional[Path] = None) -> Path:
+    import zipfile
+    source = Path(apkg_path)
+    if not zipfile.is_zipfile(source):
+        raise ValueError(f"Not a zip archive: {source}")
+    target = dest or source.parent / (source.stem + "_adapter")
+    target.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(source, "r") as zf:
+        for name in zf.namelist():
+            if name.startswith("weights/"):
+                out_path = target / Path(name).name
+                out_path.write_bytes(zf.read(name))
+    if not (target / "adapter_config.json").exists() and not (target / "adapter.safetensors").exists():
+        raise ValueError(f"No adapter artifacts found in {source}")
+    return target
